@@ -7,8 +7,15 @@ RUN apt-get update \
         ca-certificates \
         tzdata \
         ffmpeg \
+        curl \
+        wget \
+        unzip \
+        rsync \
         proxychains4 \
         nodejs \
+    && (apt-get install -y --no-install-recommends chromium \
+        || apt-get install -y --no-install-recommends chromium-browser \
+        || true) \
     && rm -rf /var/lib/apt/lists/*
 
 # yt-dlp runtime check expects `node` binary name.
