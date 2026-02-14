@@ -23,7 +23,8 @@ RUN if [ ! -x /usr/bin/node ] && [ -x /usr/bin/nodejs ]; then ln -s /usr/bin/nod
 
 WORKDIR /opt/lampac
 
-COPY app/lampac-go /usr/local/bin/lampac-go
+COPY app/lampac-go-amd64 /tmp/lampac-go-amd64
+COPY app/lampac-go-arm64 /tmp/lampac-go-arm64
 COPY app/module /opt/lampac/module
 COPY app/plugins /opt/lampac/plugins
 COPY app/wwwroot /opt/lampac/wwwroot
@@ -32,7 +33,15 @@ COPY app/bin /opt/lampac/bin
 COPY templates /opt/lampac/templates
 COPY docker/entrypoint.sh /entrypoint.sh
 
-RUN chmod +x /usr/local/bin/lampac-go /entrypoint.sh
+RUN set -eux; \
+    ARCH="$(dpkg --print-architecture)"; \
+    case "$ARCH" in \
+      amd64) cp /tmp/lampac-go-amd64 /usr/local/bin/lampac-go ;; \
+      arm64) cp /tmp/lampac-go-arm64 /usr/local/bin/lampac-go ;; \
+      *) echo "Unsupported architecture: $ARCH"; exit 1 ;; \
+    esac; \
+    chmod +x /usr/local/bin/lampac-go /entrypoint.sh; \
+    rm -f /tmp/lampac-go-amd64 /tmp/lampac-go-arm64
 
 # Ensure yt-dlp is executable for current container architecture.
 # If bundled binary is incompatible, replace it with the proper upstream build.

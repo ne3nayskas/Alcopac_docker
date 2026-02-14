@@ -29,6 +29,23 @@ if ! docker info >/dev/null 2>&1; then
   exit 1
 fi
 
+HOST_ARCH="$(uname -m)"
+case "$HOST_ARCH" in
+  x86_64) TARGET_ARCH="amd64" ;;
+  aarch64|arm64) TARGET_ARCH="arm64" ;;
+  *) TARGET_ARCH="unknown" ;;
+esac
+echo "Host architecture: $HOST_ARCH (target: $TARGET_ARCH)"
+if [[ "$TARGET_ARCH" == "unknown" ]]; then
+  echo "Неизвестная архитектура хоста. Dockerfile поддерживает amd64/arm64."
+fi
+
+if [[ ! -f "$ROOT_DIR/app/lampac-go-amd64" || ! -f "$ROOT_DIR/app/lampac-go-arm64" ]]; then
+  echo "Не найдены бинарники app/lampac-go-amd64 и app/lampac-go-arm64."
+  echo "Проверьте комплект поставки."
+  exit 1
+fi
+
 mkdir -p "$CONFIG_DIR" "$CACHE_DIR"
 
 if [[ ! -f "$ROOT_DIR/.env" ]]; then
