@@ -37,12 +37,19 @@ Telegram Admin ID @Get_myidrobot
 После запуска доступны стандартные endpoints:
 
 http://<HOST>:18118/on.js
+
 http://<HOST>:18118/online.js
+
 http://<HOST>:18118/sisi.js
+
 http://<HOST>:18118/dlna.js
+
 http://<HOST>:18118/tracks.js
+
 http://<HOST>:18118/backup.js
+
 http://<HOST>:18118/sync.js
+
 http://<HOST>:18118/ts.js
 
 ### Конфигурация
