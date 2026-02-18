@@ -1,10 +1,10 @@
 services:
-  lampac-go:
+  alcopac:
     build:
       context: .
       dockerfile: Dockerfile
-    image: go-lampa:0.1
-    container_name: go-lampa
+    image: alcopac:0.1
+    container_name: alcopac
     restart: unless-stopped
     env_file:
       - .env

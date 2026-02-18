@@ -24,8 +24,8 @@ step() { echo ""; echo -e "${BOLD}[$1/$TOTAL_STEPS] $2${NC}"; echo ""; }
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CONFIG_DIR="$ROOT_DIR/config"
 NON_INTERACTIVE="${INSTALL_NONINTERACTIVE:-false}"
-CONTAINER_NAME="go-lampa"
-IMAGE_NAME="go-lampa"
+CONTAINER_NAME="alcopac"
+IMAGE_NAME="alcopac"
 ACTION=""
 TORRSERVER_PORT=9080
 INSTALL_TORR=false
@@ -203,7 +203,7 @@ do_install() {
 
   step 2 "Настройка"
 
-  LISTEN_PORT=$(ask "Порт lampac-go" "18118")
+  LISTEN_PORT=$(ask "Порт alcopac" "18118")
 
   # Telegram
   TG_ENABLE=$(ask_yn "Включить Telegram бот / авторизацию" "n")
@@ -409,7 +409,7 @@ do_install() {
     log "Контейнер ${BOLD}${CONTAINER_NAME}${NC} запущен"
   else
     warn "Контейнер не стартовал. Проверьте логи:"
-    echo "  $COMPOSE_CMD logs -f lampac-go"
+    echo "  $COMPOSE_CMD logs -f alcopac"
   fi
 
   # Health-check
@@ -436,7 +436,7 @@ do_install() {
   echo -e "    Конфиг:      ${DIM}config/init.json${NC}"
   echo ""
   echo -e "  ${BOLD}Управление${NC}"
-  echo -e "    Логи:        ${DIM}$COMPOSE_CMD logs -f lampac-go${NC}"
+  echo -e "    Логи:        ${DIM}$COMPOSE_CMD logs -f alcopac${NC}"
   echo -e "    Перезапуск:  ${DIM}$COMPOSE_CMD restart${NC}"
   echo -e "    Остановка:   ${DIM}$COMPOSE_CMD down${NC}"
   echo -e "    Обновление:  ${DIM}./install.sh update${NC}"
@@ -486,8 +486,17 @@ do_update() {
 
   docker info >/dev/null 2>&1 || err "Docker daemon недоступен."
 
+  # Миграция: старые установки (go-lampa) → alcopac
   if ! is_container_exists; then
-    err "Контейнер ${BOLD}${CONTAINER_NAME}${NC} не найден. Используйте ${BOLD}install${NC}."
+    if docker ps -a --filter "name=go-lampa" --format '{{.Names}}' 2>/dev/null | grep -q "^go-lampa$"; then
+      info "Найден контейнер ${BOLD}go-lampa${NC} — останавливаю и удаляю (мигрируем на ${BOLD}${CONTAINER_NAME}${NC})..."
+      docker stop go-lampa 2>/dev/null || true
+      docker rm go-lampa 2>/dev/null || true
+      docker rmi go-lampa:0.1 2>/dev/null || true
+      log "Миграция: go-lampa → ${CONTAINER_NAME}"
+    else
+      err "Контейнер ${BOLD}${CONTAINER_NAME}${NC} не найден. Используйте ${BOLD}install${NC}."
+    fi
   fi
 
   if [ ! -f "$ROOT_DIR/app/lampac-go-amd64" ] || [ ! -f "$ROOT_DIR/app/lampac-go-arm64" ]; then
@@ -594,7 +603,7 @@ do_update() {
     log "Контейнер ${BOLD}${CONTAINER_NAME}${NC} запущен"
   else
     warn "Контейнер не стартовал"
-    $COMPOSE_CMD logs --tail 20 lampac-go 2>/dev/null || true
+    $COMPOSE_CMD logs --tail 20 alcopac 2>/dev/null || true
   fi
 
   # Health-check
@@ -610,7 +619,7 @@ do_update() {
   echo -e "  ${GREEN}${BOLD}╚══════════════════════════════════════════╝${NC}"
   echo ""
   echo -e "  URL:  ${BOLD}http://${IP}:${LISTEN_PORT}/${NC}"
-  echo -e "  Логи: ${DIM}$COMPOSE_CMD logs -f lampac-go${NC}"
+  echo -e "  Логи: ${DIM}$COMPOSE_CMD logs -f alcopac${NC}"
   echo ""
   echo -e "  ${DIM}Конфиги и данные (volumes) сохранены.${NC}"
   echo ""
@@ -625,6 +634,13 @@ do_remove() {
 
   require_cmd docker
   detect_compose
+
+  # Миграция: удалим и старое имя, если есть
+  if docker ps -a --filter "name=go-lampa" --format '{{.Names}}' 2>/dev/null | grep -q "^go-lampa$"; then
+    docker stop go-lampa 2>/dev/null || true
+    docker rm go-lampa 2>/dev/null || true
+    docker rmi go-lampa:0.1 2>/dev/null || true
+  fi
 
   if ! is_container_exists; then
     # Попробуем найти образ
